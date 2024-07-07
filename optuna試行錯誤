@@ -1,0 +1,510 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": [],
+      "authorship_tag": "ABX9TyNMDRU7LEPCBq5HG7stOKpt",
+      "include_colab_link": true
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {
+        "id": "view-in-github",
+        "colab_type": "text"
+      },
+      "source": [
+        "<a href=\"https://colab.research.google.com/github/TomoharuKurosu/Tomoaharu_Kurosu_2023/blob/main/optuna%E8%A9%A6%E8%A1%8C%E9%8C%AF%E8%AA%A4\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "execution_count": 3,
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        },
+        "id": "_TAf9NXB0lRH",
+        "outputId": "85df01f9-51e6-4672-fadb-3f409b1d58d0"
+      },
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Requirement already satisfied: optuna in /usr/local/lib/python3.10/dist-packages (3.6.1)\n",
+            "Requirement already satisfied: alembic>=1.5.0 in /usr/local/lib/python3.10/dist-packages (from optuna) (1.13.2)\n",
+            "Requirement already satisfied: colorlog in /usr/local/lib/python3.10/dist-packages (from optuna) (6.8.2)\n",
+            "Requirement already satisfied: numpy in /usr/local/lib/python3.10/dist-packages (from optuna) (1.25.2)\n",
+            "Requirement already satisfied: packaging>=20.0 in /usr/local/lib/python3.10/dist-packages (from optuna) (24.1)\n",
+            "Requirement already satisfied: sqlalchemy>=1.3.0 in /usr/local/lib/python3.10/dist-packages (from optuna) (2.0.31)\n",
+            "Requirement already satisfied: tqdm in /usr/local/lib/python3.10/dist-packages (from optuna) (4.66.4)\n",
+            "Requirement already satisfied: PyYAML in /usr/local/lib/python3.10/dist-packages (from optuna) (6.0.1)\n",
+            "Requirement already satisfied: Mako in /usr/local/lib/python3.10/dist-packages (from alembic>=1.5.0->optuna) (1.3.5)\n",
+            "Requirement already satisfied: typing-extensions>=4 in /usr/local/lib/python3.10/dist-packages (from alembic>=1.5.0->optuna) (4.12.2)\n",
+            "Requirement already satisfied: greenlet!=0.4.17 in /usr/local/lib/python3.10/dist-packages (from sqlalchemy>=1.3.0->optuna) (3.0.3)\n",
+            "Requirement already satisfied: MarkupSafe>=0.9.2 in /usr/local/lib/python3.10/dist-packages (from Mako->alembic>=1.5.0->optuna) (2.1.5)\n",
+            "正解率: 98.24561403508771\n"
+          ]
+        }
+      ],
+      "source": [
+        "from sklearn.linear_model import LogisticRegression\n",
+        "from sklearn.metrics import accuracy_score\n",
+        "from sklearn.model_selection import train_test_split\n",
+        "import numpy as np\n",
+        "!pip install optuna\n",
+        "\n",
+        "import optuna\n",
+        "from sklearn.model_selection import cross_validate\n",
+        "\n",
+        "from sklearn import datasets\n",
+        "cancer = datasets.load_breast_cancer()\n",
+        "\n",
+        "X = cancer.data\n",
+        "y = 1- cancer.target\n",
+        "\n",
+        "X_train, X_test, y_train, y_test = train_test_split(\n",
+        "    X, y, test_size=0.2, shuffle=True, random_state=123)\n",
+        "\n",
+        "# 解説\n",
+        "# solverは、最適化問題で使用するアルゴリズムです。\n",
+        "# 今回は、'lbfgs'を指定しています。他には 'newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga'があります。デフォルトは'lbfgs'ですので、明示的に'lbfgs'を指定しています。\n",
+        "# 最大反復回数は max_iter で設定が可能です。デフォルトは100回ですが、デフォルトのままですと警告が出てしまうため、max_iterを10000に指定しています。\n",
+        "model = LogisticRegression(solver='lbfgs',max_iter=10000)\n",
+        "\n",
+        "# 訓練\n",
+        "model.fit(X_train, y_train)\n",
+        "\n",
+        "# 予測\n",
+        "pred = model.predict(X_test)\n",
+        "\n",
+        "# 正解率を出力\n",
+        "accuracy = 100.0 * accuracy_score(y_test, pred)\n",
+        "print(\"正解率: {}\".format(accuracy))"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "from sklearn.model_selection import cross_val_score\n",
+        "\n",
+        "# 5分割交差検証による汎化性能の評価\n",
+        "scores = cross_val_score(model, X_train, y_train, cv=5)\n",
+        "\n",
+        "# 評価結果の出力\n",
+        "print(\"5分割交差検証による汎化性能の評価: {}\".format(100 * scores.mean()))"
+      ],
+      "metadata": {
+        "id": "s35U2R-p1PId",
+        "outputId": "d24e39c2-1ed4-4022-e4e7-6fd6bb2096f2",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        }
+      },
+      "execution_count": 4,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "5分割交差検証による汎化性能の評価: 94.94505494505493\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "from sklearn.linear_model import LogisticRegression\n",
+        "from sklearn.metrics import accuracy_score\n",
+        "from sklearn.model_selection import train_test_split\n",
+        "from sklearn.model_selection import cross_validate\n",
+        "\n",
+        "import numpy as np\n",
+        "import optuna\n",
+        "\n",
+        "class Objective:\n",
+        "    def __init__(self, X, y):\n",
+        "        # 変数X,yの初期化\n",
+        "        self.X = X\n",
+        "        self.y = y\n",
+        "\n",
+        "    def __call__(self, trial):\n",
+        "        # ハイパーパラメータの設定\n",
+        "        params = {\n",
+        "            # 最適化アルゴリズムを指定\n",
+        "            'solver' : trial.suggest_categorical('solver', ['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga']),\n",
+        "            # 正則化の強さを指定（0.0001から10まで）\n",
+        "            'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+        "            # 最大反復回数（＊ソルバーが収束するまで）\n",
+        "            'max_iter': trial.suggest_int('max_iter', 100, 100000)\n",
+        "            }\n",
+        "\n",
+        "        model = LogisticRegression(**params)\n",
+        "\n",
+        "        # 評価指標として正解率の最大化を目指す\n",
+        "        scores = cross_validate(model,\n",
+        "                                X=self.X,\n",
+        "                                y=self.y,\n",
+        "                                scoring='accuracy', # 正解率を指定（https://scikit-learn.org/stable/modules/model_evaluation.html#scoring-parameter）\n",
+        "                                n_jobs=-1) # 並行して実行するジョブの数（-1は全てのプロセッサを使用）\n",
+        "        return scores['test_score'].mean()\n",
+        "\n",
+        "# ハイパーパラメータの探索\n",
+        "objective = Objective(X_train, y_train)\n",
+        "study = optuna.create_study(direction='maximize') # 最大化\n",
+        "study.optimize(objective, timeout=60)\n",
+        "\n",
+        "# ベストパラメータを出力\n",
+        "print('params:', study.best_params)"
+      ],
+      "metadata": {
+        "id": "p6-ZLuog1ZRE",
+        "outputId": "0d56a2c8-c7bc-42f1-9c7c-7d152fde3575",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        }
+      },
+      "execution_count": 5,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stderr",
+          "text": [
+            "[I 2024-07-07 01:36:13,935] A new study created in memory with name: no-name-bbf7f910-c943-4ce5-922b-1549d1fd5c98\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:16,386] Trial 0 finished with value: 0.9384615384615385 and parameters: {'solver': 'lbfgs', 'C': 0.038919050484999294, 'max_iter': 12409}. Best is trial 0 with value: 0.9384615384615385.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:17,040] Trial 1 finished with value: 0.9406593406593405 and parameters: {'solver': 'lbfgs', 'C': 0.07520075433809617, 'max_iter': 70999}. Best is trial 1 with value: 0.9406593406593405.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:17,152] Trial 2 finished with value: 0.9208791208791208 and parameters: {'solver': 'lbfgs', 'C': 0.00013760834423746004, 'max_iter': 28261}. Best is trial 1 with value: 0.9406593406593405.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:17,813] Trial 3 finished with value: 0.9406593406593405 and parameters: {'solver': 'lbfgs', 'C': 0.0826935109961171, 'max_iter': 44943}. Best is trial 1 with value: 0.9406593406593405.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:17,984] Trial 4 finished with value: 0.9318681318681319 and parameters: {'solver': 'lbfgs', 'C': 0.0013255468584832415, 'max_iter': 81420}. Best is trial 1 with value: 0.9406593406593405.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:18,418] Trial 5 finished with value: 0.9384615384615385 and parameters: {'solver': 'newton-cg', 'C': 0.03762387748406333, 'max_iter': 76964}. Best is trial 1 with value: 0.9406593406593405.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:22,217] Trial 6 finished with value: 0.9164835164835164 and parameters: {'solver': 'saga', 'C': 0.2568204202469771, 'max_iter': 35102}. Best is trial 1 with value: 0.9406593406593405.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:22,277] Trial 7 finished with value: 0.9274725274725274 and parameters: {'solver': 'liblinear', 'C': 0.013513286170476204, 'max_iter': 79452}. Best is trial 1 with value: 0.9406593406593405.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:24,841] Trial 8 finished with value: 0.945054945054945 and parameters: {'solver': 'lbfgs', 'C': 2.7784327146698766, 'max_iter': 46787}. Best is trial 8 with value: 0.945054945054945.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:25,235] Trial 9 finished with value: 0.9494505494505494 and parameters: {'solver': 'newton-cg', 'C': 2.2816209437733463, 'max_iter': 73593}. Best is trial 9 with value: 0.9494505494505494.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:25,661] Trial 10 finished with value: 0.956043956043956 and parameters: {'solver': 'newton-cg', 'C': 9.511300132701983, 'max_iter': 99099}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:26,075] Trial 11 finished with value: 0.9538461538461538 and parameters: {'solver': 'newton-cg', 'C': 7.412692747934241, 'max_iter': 88401}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:28,948] Trial 12 finished with value: 0.9164835164835164 and parameters: {'solver': 'sag', 'C': 9.27427754841913, 'max_iter': 98534}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:29,338] Trial 13 finished with value: 0.9494505494505494 and parameters: {'solver': 'newton-cg', 'C': 1.5102910115543808, 'max_iter': 99630}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:29,762] Trial 14 finished with value: 0.956043956043956 and parameters: {'solver': 'newton-cg', 'C': 9.909369472095541, 'max_iter': 91463}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:30,169] Trial 15 finished with value: 0.9494505494505494 and parameters: {'solver': 'newton-cg', 'C': 0.49348228210716616, 'max_iter': 63767}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:32,812] Trial 16 finished with value: 0.9164835164835164 and parameters: {'solver': 'sag', 'C': 0.003923694313894814, 'max_iter': 61680}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:39,095] Trial 17 finished with value: 0.9164835164835164 and parameters: {'solver': 'saga', 'C': 0.46983007022414225, 'max_iter': 89887}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:39,178] Trial 18 finished with value: 0.9428571428571427 and parameters: {'solver': 'liblinear', 'C': 1.3038109044687352, 'max_iter': 2689}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:39,791] Trial 19 finished with value: 0.9538461538461538 and parameters: {'solver': 'newton-cg', 'C': 6.739396174695835, 'max_iter': 59294}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:40,353] Trial 20 finished with value: 0.9428571428571427 and parameters: {'solver': 'newton-cg', 'C': 0.21292097717669276, 'max_iter': 88737}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:40,750] Trial 21 finished with value: 0.9538461538461538 and parameters: {'solver': 'newton-cg', 'C': 8.829091655802085, 'max_iter': 89391}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:41,155] Trial 22 finished with value: 0.9494505494505494 and parameters: {'solver': 'newton-cg', 'C': 2.758926301825771, 'max_iter': 89414}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:41,557] Trial 23 finished with value: 0.9516483516483516 and parameters: {'solver': 'newton-cg', 'C': 4.522882001560183, 'max_iter': 96620}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:41,933] Trial 24 finished with value: 0.9516483516483516 and parameters: {'solver': 'newton-cg', 'C': 1.1745818767885459, 'max_iter': 83862}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:44,801] Trial 25 finished with value: 0.9164835164835164 and parameters: {'solver': 'sag', 'C': 5.177965289784812, 'max_iter': 69226}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:47,160] Trial 26 finished with value: 0.9164835164835164 and parameters: {'solver': 'saga', 'C': 0.692040988291725, 'max_iter': 95338}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:47,351] Trial 27 finished with value: 0.9186813186813186 and parameters: {'solver': 'newton-cg', 'C': 0.00012481764185622206, 'max_iter': 52908}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:47,765] Trial 28 finished with value: 0.956043956043956 and parameters: {'solver': 'newton-cg', 'C': 9.719336387034016, 'max_iter': 82070}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:47,838] Trial 29 finished with value: 0.9274725274725274 and parameters: {'solver': 'liblinear', 'C': 0.012243465123930281, 'max_iter': 20650}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:48,463] Trial 30 finished with value: 0.9494505494505494 and parameters: {'solver': 'newton-cg', 'C': 3.395493650225648, 'max_iter': 82072}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:49,046] Trial 31 finished with value: 0.9538461538461538 and parameters: {'solver': 'newton-cg', 'C': 8.857657082778475, 'max_iter': 91955}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:49,627] Trial 32 finished with value: 0.9494505494505494 and parameters: {'solver': 'newton-cg', 'C': 0.9914627228952836, 'max_iter': 84618}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:50,253] Trial 33 finished with value: 0.9494505494505494 and parameters: {'solver': 'newton-cg', 'C': 3.432343206472739, 'max_iter': 68712}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:50,863] Trial 34 finished with value: 0.956043956043956 and parameters: {'solver': 'newton-cg', 'C': 9.606210004860129, 'max_iter': 74068}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:51,284] Trial 35 finished with value: 0.9296703296703296 and parameters: {'solver': 'newton-cg', 'C': 0.0007516930765423988, 'max_iter': 75684}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:52,726] Trial 36 finished with value: 0.9406593406593405 and parameters: {'solver': 'lbfgs', 'C': 0.199096779843763, 'max_iter': 54496}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:55,089] Trial 37 finished with value: 0.9164835164835164 and parameters: {'solver': 'saga', 'C': 1.9775617279086344, 'max_iter': 39543}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:55,149] Trial 38 finished with value: 0.9296703296703296 and parameters: {'solver': 'liblinear', 'C': 0.061359908671319865, 'max_iter': 78565}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:58,023] Trial 39 finished with value: 0.9164835164835164 and parameters: {'solver': 'sag', 'C': 4.77592034816445, 'max_iter': 94000}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:58,153] Trial 40 finished with value: 0.9274725274725274 and parameters: {'solver': 'lbfgs', 'C': 0.0002926331423412693, 'max_iter': 66974}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:58,535] Trial 41 finished with value: 0.956043956043956 and parameters: {'solver': 'newton-cg', 'C': 9.392369660724826, 'max_iter': 86239}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:58,941] Trial 42 finished with value: 0.956043956043956 and parameters: {'solver': 'newton-cg', 'C': 9.378194062002594, 'max_iter': 73472}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:59,331] Trial 43 finished with value: 0.9516483516483516 and parameters: {'solver': 'newton-cg', 'C': 4.449549456785071, 'max_iter': 85518}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:36:59,738] Trial 44 finished with value: 0.9494505494505494 and parameters: {'solver': 'newton-cg', 'C': 2.0088031678278417, 'max_iter': 79417}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:37:00,178] Trial 45 finished with value: 0.956043956043956 and parameters: {'solver': 'newton-cg', 'C': 9.945232605075347, 'max_iter': 99169}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:37:00,597] Trial 46 finished with value: 0.9494505494505494 and parameters: {'solver': 'newton-cg', 'C': 2.88942734052762, 'max_iter': 93772}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:37:00,998] Trial 47 finished with value: 0.9516483516483516 and parameters: {'solver': 'newton-cg', 'C': 5.483215668419779, 'max_iter': 85374}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:37:02,756] Trial 48 finished with value: 0.9494505494505494 and parameters: {'solver': 'lbfgs', 'C': 0.8357806759735047, 'max_iter': 73171}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:37:06,770] Trial 49 finished with value: 0.9164835164835164 and parameters: {'solver': 'saga', 'C': 0.38550482962013766, 'max_iter': 78157}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:37:07,246] Trial 50 finished with value: 0.9494505494505494 and parameters: {'solver': 'newton-cg', 'C': 1.6978078721300796, 'max_iter': 29003}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:37:07,683] Trial 51 finished with value: 0.956043956043956 and parameters: {'solver': 'newton-cg', 'C': 9.793832438463983, 'max_iter': 72706}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:37:08,097] Trial 52 finished with value: 0.9538461538461538 and parameters: {'solver': 'newton-cg', 'C': 6.319321513818858, 'max_iter': 82883}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:37:08,522] Trial 53 finished with value: 0.9494505494505494 and parameters: {'solver': 'newton-cg', 'C': 3.6282406468167743, 'max_iter': 65975}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:37:08,938] Trial 54 finished with value: 0.9538461538461538 and parameters: {'solver': 'newton-cg', 'C': 6.355055806924227, 'max_iter': 91873}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:37:09,005] Trial 55 finished with value: 0.9472527472527472 and parameters: {'solver': 'liblinear', 'C': 2.827703039659997, 'max_iter': 75246}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:37:11,850] Trial 56 finished with value: 0.9164835164835164 and parameters: {'solver': 'sag', 'C': 0.11994363476796521, 'max_iter': 99891}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:37:12,251] Trial 57 finished with value: 0.9538461538461538 and parameters: {'solver': 'newton-cg', 'C': 6.430330462014952, 'max_iter': 60656}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:37:12,660] Trial 58 finished with value: 0.956043956043956 and parameters: {'solver': 'newton-cg', 'C': 9.932365921203527, 'max_iter': 86458}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:37:13,052] Trial 59 finished with value: 0.9494505494505494 and parameters: {'solver': 'newton-cg', 'C': 1.4731139306624694, 'max_iter': 96608}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:37:13,462] Trial 60 finished with value: 0.9494505494505494 and parameters: {'solver': 'newton-cg', 'C': 2.1257132365588545, 'max_iter': 79965}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:37:13,876] Trial 61 finished with value: 0.956043956043956 and parameters: {'solver': 'newton-cg', 'C': 9.692976848128273, 'max_iter': 99853}. Best is trial 10 with value: 0.956043956043956.\n",
+            "<ipython-input-5-515d41d3c476>:21: FutureWarning: suggest_loguniform has been deprecated in v3.0.0. This feature will be removed in v6.0.0. See https://github.com/optuna/optuna/releases/tag/v3.0.0. Use suggest_float(..., log=True) instead.\n",
+            "  'C': trial.suggest_loguniform('C', 0.0001, 10),\n",
+            "[I 2024-07-07 01:37:14,282] Trial 62 finished with value: 0.9516483516483516 and parameters: {'solver': 'newton-cg', 'C': 4.873749156092089, 'max_iter': 91881}. Best is trial 10 with value: 0.956043956043956.\n"
+          ]
+        },
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "params: {'solver': 'newton-cg', 'C': 9.511300132701983, 'max_iter': 99099}\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "study.best_params"
+      ],
+      "metadata": {
+        "id": "NHAEqMGi1elJ",
+        "outputId": "0560aac8-83f0-46e8-fc9b-04a06a18b7a2",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        }
+      },
+      "execution_count": 6,
+      "outputs": [
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": [
+              "{'solver': 'newton-cg', 'C': 9.511300132701983, 'max_iter': 99099}"
+            ]
+          },
+          "metadata": {},
+          "execution_count": 6
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print(study.best_params['solver'])\n",
+        "print(study.best_params['max_iter'])\n",
+        "print(study.best_params['C'])"
+      ],
+      "metadata": {
+        "id": "NqtgQH_D1q-Y",
+        "outputId": "fd961133-23b6-464a-ca0b-30f700a4fdcb",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        }
+      },
+      "execution_count": 7,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "newton-cg\n",
+            "99099\n",
+            "9.511300132701983\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print(study.best_value)"
+      ],
+      "metadata": {
+        "id": "343scXX51xhn",
+        "outputId": "631b02d1-a265-4080-e0ec-5cc7d52e9461",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        }
+      },
+      "execution_count": 8,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "0.956043956043956\n"
+          ]
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "from sklearn.metrics import confusion_matrix, accuracy_score\n",
+        "from sklearn.metrics import precision_score, recall_score\n",
+        "\n",
+        "model = LogisticRegression(\n",
+        "    # ハイパーパラメータ探索で特定した値を設定\n",
+        "    solver = study.best_params['solver'],\n",
+        "    C = study.best_params['C'],\n",
+        "    max_iter = study.best_params['max_iter']\n",
+        ")\n",
+        "\n",
+        "model.fit(X_train, y_train)\n",
+        "pred = model.predict(X_test)\n",
+        "# 正解率の出力\n",
+        "print(\"Accuracy: {:.5f}\".format(100 * accuracy_score(y_test, pred)))\n",
+        "\n",
+        "# 混同行列の出力\n",
+        "print(confusion_matrix(y_test, pred))\n",
+        "\n",
+        "# 適合率\n",
+        "print(\"Precision: {:.5f}\".format(100 * precision_score(y_test, pred)))\n",
+        "# 再現率\n",
+        "print(\"Recall: {:.5f}\".format(100 * recall_score(y_test, pred)))"
+      ],
+      "metadata": {
+        "id": "teFtbejN11X3",
+        "outputId": "1d63e35f-dcad-445b-a2b3-a9b7560d451b",
+        "colab": {
+          "base_uri": "https://localhost:8080/"
+        }
+      },
+      "execution_count": 10,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Accuracy: 98.24561\n",
+            "[[73  0]\n",
+            " [ 2 39]]\n",
+            "Precision: 100.00000\n",
+            "Recall: 95.12195\n"
+          ]
+        }
+      ]
+    }
+  ]
+}
